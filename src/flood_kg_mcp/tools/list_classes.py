@@ -1,0 +1,62 @@
+"""Tool: kg_list_classes — list every RDF class in the knowledge graph.
+
+Returns each class URI with its instance count (COUNT DISTINCT to avoid
+overcounting when a subject has multiple rdf:type triples for the same class)
+and its rdfs:label if one exists, sorted by instance count descending.
+"""
+
+from __future__ import annotations
+
+from fastmcp import FastMCP
+
+from flood_kg_mcp.utils import get_store
+
+_QUERY = """\
+PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?class (COUNT(DISTINCT ?s) AS ?count) (SAMPLE(?lbl) AS ?label)
+WHERE {
+  ?s rdf:type ?class .
+  OPTIONAL { ?class rdfs:label ?lbl }
+}
+GROUP BY ?class
+ORDER BY DESC(?count)
+"""
+
+
+def register(mcp: FastMCP) -> None:
+    """Register the kg_list_classes tool with the MCP server."""
+
+    @mcp.tool(
+        name="kg_list_classes",
+        annotations={
+            "title": "List KG Classes",
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "idempotentHint": True,
+            "openWorldHint": False,
+        },
+    )
+    def kg_list_classes() -> list[dict]:
+        """List every RDF class in the Texas Flood Knowledge Graph.
+
+        Returns a list of objects sorted by instance_count descending, each with:
+          - uri:            the full class URI (plain string, no angle brackets)
+          - label:          rdfs:label value if present, otherwise null
+          - instance_count: number of distinct subjects typed as this class
+
+        Read kg://schema for namespace prefixes and query guidance before
+        writing SPARQL against this graph.
+        """
+        store = get_store()
+        rows = []
+        for solution in store.query(_QUERY):
+            label_term = solution["label"]
+            rows.append(
+                {
+                    "uri": solution["class"].value,
+                    "label": label_term.value if label_term is not None else None,
+                    "instance_count": int(solution["count"].value),
+                }
+            )
+        return rows

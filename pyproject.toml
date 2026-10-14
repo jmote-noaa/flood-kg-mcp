@@ -1,7 +1,7 @@
 [project]
-name = "example-server"
+name = "flood-kg-mcp"
 version = "0.1.0"
-description = "Starter MCP server for the GSA MCP hackathon"
+description = "Flood Knowledge Graph MCP server"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -9,18 +9,19 @@ dependencies = [
     "httpx>=0.27.0",
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
+    "pyoxigraph>=0.5.11",
 ]
 
 [project.scripts]
-# Lets you run the server with `uv run example-server`.
-example-server = "example_server.app:main"
+# Lets you run the server with `uv run flood-kg-mcp`.
+flood-kg-mcp = "flood_kg_mcp.app:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/example_server"]
+packages = ["src/flood_kg_mcp"]
 
 [dependency-groups]
 # Dev + eval-only deps. Install with `uv sync --group dev`.

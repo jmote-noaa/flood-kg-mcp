@@ -7,7 +7,7 @@ from typing import Any
 import httpx
 import pytest
 
-from example_server import utils
+from flood_kg_mcp import utils
 
 
 @pytest.mark.parametrize(

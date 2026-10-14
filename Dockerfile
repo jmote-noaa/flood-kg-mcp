@@ -14,6 +14,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app/src
 ENV PORT=8080
+ENV KG_DATA_PATH=/app/data/texas_flood2.ttl
 
 WORKDIR /app
 
@@ -25,7 +26,10 @@ COPY pyproject.toml README.md ./
 COPY src ./src
 RUN uv pip install --system --no-cache .
 
+# Knowledge graph data loaded into pyoxigraph at startup.
+COPY data ./data
+
 EXPOSE 8080
 
 # PORT=8080 (set above) makes app.py run HTTP on that port automatically.
-CMD ["python", "-m", "example_server.app"]
+CMD ["python", "-m", "flood_kg_mcp.app"]

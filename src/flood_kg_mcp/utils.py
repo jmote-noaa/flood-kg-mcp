@@ -7,10 +7,12 @@ I/O and formatting here keeps each tool file focused on its own logic.
 from __future__ import annotations
 
 import json
+from functools import lru_cache
 from typing import Any
 from urllib.parse import unquote, urlsplit
 
 import httpx
+import pyoxigraph
 
 # Federal APIs can be slow or intermittently unresponsive — always use an
 # explicit timeout. Bump this for large exports.
@@ -110,3 +112,24 @@ def paginate(items: list[Any], limit: int, offset: int) -> dict[str, Any]:
         "has_more": next_offset < total,
         "next_offset": next_offset if next_offset < total else None,
     }
+
+
+# ── Knowledge Graph store ─────────────────────────────────────────────────────
+
+
+@lru_cache(maxsize=1)
+def get_store() -> pyoxigraph.Store:
+    """Load the KG Turtle file once into a shared in-memory pyoxigraph Store.
+
+    The result is cached via lru_cache, so the file is read only once per
+    process regardless of how many times get_store() is called.
+
+    Raises:
+        FileNotFoundError / OSError: if kg_data_path does not exist.
+        SyntaxError: if the Turtle file is malformed.
+    """
+    from flood_kg_mcp.config import settings  # local import avoids circular dep
+
+    store = pyoxigraph.Store()
+    store.load(path=settings.kg_data_path, format=pyoxigraph.RdfFormat.TURTLE)
+    return store

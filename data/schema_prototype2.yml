@@ -1,0 +1,432 @@
+repository:
+  name: texas-flood
+
+description: >
+  Integrated Texas Flood Systems Knowledge Graph containing
+  Storm Events, FEMA Disaster Declarations, ACS data, and
+  NWS Watches and Warnings.
+  Data are harmonized through shared county entities and
+  grounded to the Flood Workshop Ontology.
+
+namespaces:
+  kg: "http://floodkg.org/"
+  flood: "http://example.org/flood-ontology#"
+
+important_notes:
+  - Repository names are storage containers and not namespaces.
+  - Dataset classes and ontology classes are distinct.
+  - County URI pattern: http://floodkg.org/county/{fips}
+  - Not all Storm Events geographic entities are counties.
+  - NWS warnings use coversCounty relationship to link to County entities.
+  - Only county-based NWS warnings (GTYPE=C) for Texas are included.
+
+dataset_classes:
+
+  County:
+    description: Canonical county integration entity shared across datasets.
+
+  FloodEvent:
+    description: Storm Events flood event record.
+
+  FEMADisasterDeclaration:
+    description: FEMA disaster declaration.
+
+  CountyDesignation:
+    description: FEMA declaration-to-county designation relationship.
+
+  NWSHazardProduct:
+    description: >
+      NWS VTEC flood or flash flood warning event issued for Texas counties.
+      Covers Flash Flood Warnings (FF) and Flood Warnings (FA), 2023-2025.
+      County-based warnings only; polygon-based warnings excluded.
+
+primary_relationships:
+
+  occursIn:
+    domain: FloodEvent
+    range: County
+
+  forCounty:
+    domain: CountyDesignation
+    range: County
+
+  forDeclaration:
+    domain: CountyDesignation
+    range: FEMADisasterDeclaration
+
+  coversCounty:
+    domain: NWSHazardProduct
+    range: County
+
+storm_events_properties:
+  - hasDirectDeaths
+  - hasDirectInjuries
+  - hasPropertyDamage
+  - hasCropDamage
+  - hasDurationHours
+  - hasEventType
+  - hasNarrative
+  - hasSeason
+  - hasYear
+  - hasStartTime
+  - hasEndTime
+
+hazard_event_types:
+
+  flood:
+    graph_value: flood
+
+  flash_flood:
+    graph_value: flash-flood
+
+  coastal_flood:
+    graph_value: coastal-flood
+
+fema_properties:
+  - disasterNumber
+  - declarationDate
+  - declarationTitle
+  - declarationType
+  - incidentType
+  - incidentBeginDate
+  - incidentEndDate
+  - iaProgramDeclared
+  - ihProgramDeclared
+  - paProgramDeclared
+  - hmProgramDeclared
+
+acs_properties:
+
+  demographics:
+    - pop_total
+    - age_under5_male
+    - age_under5_female
+    - age_65_66_male
+    - age_65_66_female
+    - age_85plus_male
+    - age_85plus_female
+
+  economics:
+    - median_hh_income
+    - poverty_universe
+    - poverty_below
+    - snap_households
+
+  housing:
+    - housing_total
+    - housing_units_total
+    - housing_owner_occupied
+    - housing_renter_occupied
+    - housing_vacant
+    - housing_mobile_home
+
+  communications:
+    - internet_access
+    - broadband_subscription
+
+  education:
+    - education_bachelors
+
+  transportation:
+    - vehicle_0
+    - vehicle_1
+    - vehicle_2plus
+
+nws_properties:
+  - phenomenon
+  - phenomenonName
+  - significance
+  - isEmergency
+  - issuingOffice
+  - eventTrackingNumber
+  - productId
+  - issuanceTime
+  - expirationTime
+  - initialIssuanceTime
+  - initialExpirationTime
+  - nwsUgc
+  - warningDurationHours
+
+nws_warning_duration:
+  description: >
+    warningDurationHours is a derived property computed as
+    (expirationTime - issuanceTime) in hours, calculated during RDF
+    construction and stored as xsd:decimal. It is not a native NWS field.
+  typical_range: 2 to 5 hours for flash flood and flood warnings.
+  guidance: >
+    Use warningDurationHours directly in SPARQL rather than computing
+    duration from issuanceTime and expirationTime via dateTime
+    subtraction, which does not reliably return usable hour values
+    across triplestores.
+
+nws_phenomenon_types:
+
+  flash_flood_warning:
+    phenomenon_code: FF
+    significance_code: W
+    description: Flash Flood Warning
+
+  flood_warning:
+    phenomenon_code: FA
+    significance_code: W
+    description: Flood Warning
+
+analytical_concepts:
+
+  poverty_rate:
+    category: economic_vulnerability
+    numerator: poverty_below
+    denominator: poverty_universe
+    formula: poverty_below / poverty_universe
+    interpretation: Higher values indicate greater economic vulnerability.
+
+  snap_rate:
+    category: economic_vulnerability
+    numerator: snap_households
+    denominator: housing_total
+    formula: snap_households / housing_total
+    interpretation: Higher values indicate greater reliance on food assistance.
+
+  broadband_access_rate:
+    category: communications_resilience
+    numerator: broadband_subscription
+    denominator: internet_access
+    formula: broadband_subscription / internet_access
+    interpretation: Higher values indicate greater household broadband access.
+
+  internet_access_rate:
+    category: communications_resilience
+    numerator: internet_access
+    denominator: housing_total
+    formula: internet_access / housing_total
+    interpretation: Higher values indicate greater digital connectivity.
+
+  elderly_population:
+    category: demographic_vulnerability
+    components:
+      - age_65_66_male
+      - age_65_66_female
+      - age_85plus_male
+      - age_85plus_female
+    aggregation: sum
+    interpretation: Total population aged 65 and older.
+
+  elderly_share:
+    category: demographic_vulnerability
+    numerator: elderly_population
+    denominator: pop_total
+    formula: elderly_population / pop_total
+    interpretation: Higher values indicate a larger elderly population share.
+
+  young_children_population:
+    category: demographic_vulnerability
+    components:
+      - age_under5_male
+      - age_under5_female
+    aggregation: sum
+    interpretation: Total population under age five.
+
+  young_children_share:
+    category: demographic_vulnerability
+    numerator: young_children_population
+    denominator: pop_total
+    formula: young_children_population / pop_total
+    interpretation: Higher values indicate a larger share of young children.
+
+  mobile_home_share:
+    category: housing_vulnerability
+    numerator: housing_mobile_home
+    denominator: housing_units_total
+    formula: housing_mobile_home / housing_units_total
+    interpretation: Higher values indicate greater dependence on mobile housing.
+
+  housing_vacancy_rate:
+    category: housing_conditions
+    numerator: housing_vacant
+    denominator: housing_units_total
+    formula: housing_vacant / housing_units_total
+    interpretation: Higher values indicate a larger vacant housing stock.
+
+  renter_share:
+    category: housing_vulnerability
+    numerator: housing_renter_occupied
+    denominator: housing_total
+    formula: housing_renter_occupied / housing_total
+    interpretation: Higher values indicate a larger renter population.
+
+  owner_share:
+    category: housing_stability
+    numerator: housing_owner_occupied
+    denominator: housing_total
+    formula: housing_owner_occupied / housing_total
+    interpretation: Higher values indicate greater owner occupancy.
+
+  vehicle_access_deficit:
+    category: transportation_vulnerability
+    numerator: vehicle_0
+    denominator: (vehicle_0 + vehicle_1 + vehicle_2plus)
+    formula: vehicle_0 / (vehicle_0 + vehicle_1 + vehicle_2plus)
+    interpretation: Higher values indicate greater transportation constraints.
+
+  bachelors_rate:
+    category: educational_attainment
+    numerator: education_bachelors
+    denominator: pop_total
+    formula: education_bachelors / pop_total
+    interpretation: Higher values indicate greater educational attainment.
+
+  nws_warning_frequency:
+    category: hazard_exposure
+    numerator: COUNT(DISTINCT NWSHazardProduct)
+    denominator: none
+    formula: COUNT(DISTINCT warnings coversCounty county)
+    interpretation: >
+      Higher values indicate greater frequency of NWS flood and flash flood
+      warnings issued for the county. Use as a prospective hazard exposure
+      measure. Covers 2023-2025 only.
+
+indicator_catalog:
+
+  economic_vulnerability:
+    - poverty_rate
+    - snap_rate
+
+  demographic_vulnerability:
+    - elderly_share
+    - young_children_share
+
+  housing_vulnerability:
+    - renter_share
+    - mobile_home_share
+    - housing_vacancy_rate
+
+  housing_stability:
+    - owner_share
+
+  transportation_vulnerability:
+    - vehicle_access_deficit
+
+  communications_resilience:
+    - broadband_access_rate
+    - internet_access_rate
+
+  educational_capacity:
+    - bachelors_rate
+
+  hazard_exposure:
+    - nws_warning_frequency
+
+analytical_constructs:
+
+  vulnerability:
+    aliases:
+      - social vulnerability
+      - social_vulnerability
+    definition: >
+      The degree to which a county population is susceptible to harm
+      from flood events, based on social, economic, and housing conditions.
+    primary_indicators:
+      - poverty_rate
+      - elderly_share
+      - mobile_home_share
+      - vehicle_access_deficit
+    secondary_indicators:
+      - snap_rate
+      - renter_share
+      - young_children_share
+    sparql_approach: >
+      When asked about vulnerability, generate a separate ranked query
+      for each primary indicator. Return county names and indicator values
+      ordered by descending value. Never combine indicators into a composite
+      index not documented here. Never infer vulnerability from hazard
+      data alone.
+
+  resilience:
+    definition: >
+      The capacity of a county population to prepare for, respond to,
+      and recover from flood events.
+    primary_indicators:
+      - broadband_access_rate
+      - internet_access_rate
+      - bachelors_rate
+      - owner_share
+    secondary_indicators:
+      - vehicle_access_deficit
+    sparql_approach: >
+      When asked about resilience, rank counties using primary indicators.
+      Higher broadband, education, and owner occupancy indicate
+      greater resilience capacity.
+      Lower values for vehicle_access_deficit indicate greater resilience capacity.
+
+  exposure:
+    definition: >
+      The intersection of hazard presence and population vulnerability
+      within a county.
+    components:
+      hazard:
+        - nws_warning_frequency
+        - flood event frequency
+        - FEMA declaration history
+      population:
+        - vulnerability indicators
+    sparql_approach: >
+      Exposure queries require cross-dataset traversal through County.
+      Use the nws_exposure, flood_exposure, or fema_exposure paths
+      documented in common_graph_paths. Never infer exposure from
+      ACS data alone. Always include both a hazard measure and at
+      least one ACS indicator in the query. Prefer nws_warning_frequency
+      as the hazard measure when a county-level warning signal is needed.
+
+  recovery_capacity:
+    definition: >
+      The resources available to a county population for post-flood
+      recovery, including economic, social, and infrastructure factors.
+    primary_indicators:
+      - median_hh_income
+      - owner_share
+      - broadband_access_rate
+    note: >
+      Recovery capacity is not explicitly represented in the graph.
+      Acknowledge this limitation when asked directly.
+
+common_graph_paths:
+
+  flood_exposure:
+    description: FloodEvent -> County -> ACS indicators
+    sparql_pattern: |
+      ?event a kg:FloodEvent ;
+             kg:occursIn ?county .
+      ?county kg:pop_total ?pop .
+
+  fema_exposure:
+    description: FEMADisasterDeclaration -> CountyDesignation -> County -> ACS
+    sparql_pattern: |
+      ?decl a kg:FEMADisasterDeclaration .
+      ?cd kg:forDeclaration ?decl ;
+          kg:forCounty ?county .
+      ?county kg:pop_total ?pop .
+
+  nws_exposure:
+    description: NWSHazardProduct -> County -> ACS indicators
+    sparql_pattern: |
+      ?warning a kg:NWSHazardProduct ;
+               kg:coversCounty ?county .
+      ?county kg:pop_total ?pop .
+
+  full_exposure:
+    description: All hazard datasets -> County -> ACS (four-dataset integration)
+    sparql_pattern: |
+      ?county a kg:County ;
+              kg:countyName ?countyName .
+      OPTIONAL {
+          ?warning a kg:NWSHazardProduct ;
+                   kg:coversCounty ?county .
+      }
+      OPTIONAL {
+          ?cd a kg:CountyDesignation ;
+              kg:forCounty ?county .
+      }
+      OPTIONAL {
+          ?event a kg:FloodEvent ;
+                 kg:occursIn ?county .
+      }

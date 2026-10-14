@@ -28,12 +28,14 @@ class Settings(BaseSettings):
     mcp_host: str = "0.0.0.0"
     mcp_port: int = 8000
 
-    # ── Dataset API keys ──────────────────────────────────────────────────────
-    # Add a typed field for each API key your tools need, then read it from
-    # `settings.<field>` in your tool. Document the matching env var in
-    # `.env.example`. Example:
-    #
-    #   example_api_key: str = ""   # ← set EXAMPLE_API_KEY in the environment
+    # ── Knowledge Graph ───────────────────────────────────────────────────────
+    # Path to the Turtle (.ttl) file loaded into pyoxigraph at startup.
+    kg_data_path: str = "data/texas_flood2.ttl"
+    # Path to the YAML schema / query-guidance file served as kg://schema.
+    kg_schema_path: str = "data/schema_prototype2.yml"
+    # Path to the YAML analyst prompt-guidelines file served as kg://query-guidelines
+    # and returned by the flood_kg_analyst prompt.
+    kg_guidelines_path: str = "data/prompt_guidelines2.yml"
 
 
 settings = Settings()
