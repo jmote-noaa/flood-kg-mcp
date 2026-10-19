@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Texas Flood KG — Gold evaluation question set
+  Dataset: flood-eval-0
+  Source graph: data/texas_flood2.ttl
+  Schema: data/schema_prototype2.yml
+  Generated: 2026
+
+  Questions 1-8 have exact factual answers verified by running SPARQL directly
+  against the graph (eval/phoenix/scratch/gold_queries.py).
+  Question 9 is a refusal case: a composite resilience score is not a supported
+  analytical construct per kg://schema; the expected behavior is declining and
+  offering the documented resilience indicators instead.
+  Question 10 is out-of-scope: NFIP claims data is not in the graph.
+-->
+<evaluation>
+
+  <!-- Q1: Simple count — tests that the agent uses kg:FloodEvent correctly. -->
+  <qa_pair>
+    <question>How many flood events are in the graph?</question>
+    <answer>1540</answer>
+  </qa_pair>
+
+  <!-- Q2: Program-flag traversal — tests that the agent knows paProgramDeclared
+       lives on CountyDesignation (not FEMADisasterDeclaration) and is stored as
+       xsd:integer 1. Gold answer: 3 distinct declarations.
+       Titles are copied exactly from query output (declarationTitle values as
+       stored in the graph). -->
+  <qa_pair>
+    <question>Which declarations included Public Assistance?</question>
+    <answer>Three declarations included Public Assistance: disaster 4781 (SEVERE STORMS, STRAIGHT-LINE WINDS, TORNADOES, AND FLOODING, declared 2024-05-17), disaster 4798 (HURRICANE BERYL, declared 2024-07-09), and disaster 4879 (SEVERE STORMS, STRAIGHT-LINE WINDS, AND FLOODING, declared 2025-07-06).</answer>
+  </qa_pair>
+
+  <!-- Q3: Ratio computation, ascending order — tests correct formula
+       (broadband_subscription / internet_access) and ASC ordering.
+       No ties at rank 10. -->
+  <qa_pair>
+    <question>Which counties have the lowest broadband access rates?</question>
+    <answer>The ten counties with the lowest broadband access rates (broadband_subscription / internet_access) are, from lowest to highest: Foard County (0.932), Concho County (0.970), Kimble County (0.979), Irion County (0.980), Bailey County (0.983), Delta County (0.984), San Jacinto County (0.986), Lampasas County (0.987), Fayette County (0.990), and Somervell County (0.991).</answer>
+  </qa_pair>
+
+  <!-- Q4: incidentType filter — one declaration matches in the graph.
+       Both incidentType="Hurricane" and a title-text search yield the same
+       correct answer here; either approach is acceptable. -->
+  <qa_pair>
+    <question>Which declarations were associated with hurricanes?</question>
+    <answer>One declaration was associated with a hurricane: disaster 4798, Hurricane Beryl, declared on 2024-07-09, with the incident running from 2024-07-05 to 2024-07-09.</answer>
+  </qa_pair>
+
+  <!-- Q5: Cross-dataset join + ratio — tests the fema_exposure path
+       (CountyDesignation -> County -> ACS) and poverty_rate formula.
+       Top result is Starr County at ~33.5%. -->
+  <qa_pair>
+    <question>Which FEMA-designated counties have the highest poverty rates?</question>
+    <answer>Among FEMA-designated counties, the highest poverty rates are: Starr County (~33.5%), Kleberg County (~28.8%), San Augustine County (~27.5%), Cochran County (~27.3%), Hidalgo County (~27.2%), Edwards County (~25.3%), Willacy County (~24.6%), Cameron County (~24.4%), Brazos County (~23.9%), and Shelby County (~23.5%).</answer>
+  </qa_pair>
+
+  <!-- Q6: Cross-dataset count — tests the NWSHazardProduct + CountyDesignation
+       join through County, expecting a single integer answer. -->
+  <qa_pair>
+    <question>How many counties received both NWS flood warnings and FEMA disaster declarations?</question>
+    <answer>106 counties received both NWS flood warnings and FEMA disaster declarations.</answer>
+  </qa_pair>
+
+  <!-- Q7: Multi-indicator vulnerability — tests that the agent follows the
+       kg://schema sparql_approach for the vulnerability construct: four separate
+       ranked queries, one per primary indicator, with no composite index.
+       Noting small-population caveats (e.g., Loving, Kenedy) is acceptable
+       but not required. -->
+  <qa_pair>
+    <question>Which counties are most vulnerable to flooding?</question>
+    <answer>Vulnerability is multidimensional and must be assessed per primary indicator rather than as a single composite score. Ranked by poverty rate: Dimmit (~44.8%), Zapata (~37.4%), Presidio (~36.3%), Zavala (~36.3%), Starr (~33.5%). Ranked by elderly share (all 65+ age bands): Loving (~74.1%), Kenedy (~50.0%), Jeff Davis (~39.1%), Terrell (~37.1%), Llano (~36.9%). Ranked by mobile home share: Hudspeth (~50.1%), Leon (~37.6%), Trinity (~37.3%), Sabine (~36.6%), Newton (~36.6%). Ranked by vehicle access deficit: Dimmit (~16.7%), Brooks (~16.7%), Jack (~16.0%), Bailey (~15.9%), Loving (~14.3%).</answer>
+  </qa_pair>
+
+  <!-- Q8: Aggregate over NWSHazardProduct — tests use of warningDurationHours
+       (stored as xsd:decimal) and AVG aggregation. -->
+  <qa_pair>
+    <question>What is the average duration of NWS flash flood warnings?</question>
+    <answer>The average duration of NWS flash flood warnings is approximately 3.36 hours.</answer>
+  </qa_pair>
+
+  <!-- Q9: REFUSAL CASE — composite resilience score is not a supported
+       analytical construct per kg://schema hallucination_prevention rules.
+       Expected behavior: decline to build a composite index; offer the four
+       documented resilience primary indicators instead. -->
+  <qa_pair>
+    <question>Give each county a composite flood resilience score.</question>
+    <answer>A composite flood resilience score is not a supported analytical construct in this knowledge graph. The graph does not contain a pre-computed resilience index, and constructing one by combining indicators would require methodological choices (weights, normalization) not documented in the schema. Instead, resilience can be assessed per the documented primary indicators: broadband_access_rate, internet_access_rate, bachelors_rate, and owner_share. Each of these can be ranked separately across counties.</answer>
+  </qa_pair>
+
+  <!-- Q10: OUT-OF-SCOPE — NFIP claims data is not present in the graph.
+       Expected behavior: state clearly that the data is not in the graph. -->
+  <qa_pair>
+    <question>How many NFIP flood insurance claims were filed in Harris County?</question>
+    <answer>NFIP flood insurance claims data is not included in this knowledge graph. The graph integrates Storm Events, FEMA Disaster Declarations, ACS demographic data, and NWS hazard products, but does not contain NFIP claims records. This question cannot be answered from the available data.</answer>
+  </qa_pair>
+
+</evaluation>

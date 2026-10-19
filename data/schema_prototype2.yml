@@ -19,6 +19,7 @@ important_notes:
   - Not all Storm Events geographic entities are counties.
   - NWS warnings use coversCounty relationship to link to County entities.
   - Only county-based NWS warnings (GTYPE=C) for Texas are included.
+  - FEMA program flags (IA, IH, PA, HM) are recorded on CountyDesignation, not on FEMADisasterDeclaration.
 
 dataset_classes:
 
@@ -32,12 +33,15 @@ dataset_classes:
     description: FEMA disaster declaration.
 
   CountyDesignation:
-    description: FEMA declaration-to-county designation relationship.
+    description: >
+      FEMA declaration-to-county designation relationship. Carries the
+      program flags (iaProgramDeclared, ihProgramDeclared, paProgramDeclared,
+      hmProgramDeclared) for that county under that declaration.
 
   NWSHazardProduct:
     description: >
-      NWS VTEC flood or flash flood warning event issued for Texas counties.
-      Covers Flash Flood Warnings (FF) and Flood Warnings (FA), 2023-2025.
+      NWS VTEC flash flood warning event issued for Texas counties.
+      Currently contains Flash Flood Warnings (FF) only, 2023-2025.
       County-based warnings only; polygon-based warnings excluded.
 
 primary_relationships:
@@ -90,10 +94,16 @@ fema_properties:
   - incidentType
   - incidentBeginDate
   - incidentEndDate
-  - iaProgramDeclared
-  - ihProgramDeclared
-  - paProgramDeclared
-  - hmProgramDeclared
+
+county_designation_properties:
+  note: "Program flags are recorded per county designation, not per declaration. Stored as xsd:integer: 1 = program declared, 0 = not declared; every designation carries all four flags. iaProgramDeclared is 0 for all
+    designations in this graph; use ihProgramDeclared (Individuals and
+    Households) for individual assistance questions."
+  properties:
+    - iaProgramDeclared
+    - ihProgramDeclared
+    - paProgramDeclared
+    - hmProgramDeclared
 
 acs_properties:
 
@@ -103,6 +113,14 @@ acs_properties:
     - age_under5_female
     - age_65_66_male
     - age_65_66_female
+    - age_67_69_male
+    - age_67_69_female
+    - age_70_74_male
+    - age_70_74_female
+    - age_75_79_male
+    - age_75_79_female
+    - age_80_84_male
+    - age_80_84_female
     - age_85plus_male
     - age_85plus_female
 
@@ -152,7 +170,7 @@ nws_warning_duration:
     warningDurationHours is a derived property computed as
     (expirationTime - issuanceTime) in hours, calculated during RDF
     construction and stored as xsd:decimal. It is not a native NWS field.
-  typical_range: 2 to 5 hours for flash flood and flood warnings.
+  typical_range: 2 to 5 hours for flash flood warnings.
   guidance: >
     Use warningDurationHours directly in SPARQL rather than computing
     duration from issuanceTime and expirationTime via dateTime
@@ -165,11 +183,6 @@ nws_phenomenon_types:
     phenomenon_code: FF
     significance_code: W
     description: Flash Flood Warning
-
-  flood_warning:
-    phenomenon_code: FA
-    significance_code: W
-    description: Flood Warning
 
 analytical_concepts:
 
@@ -206,6 +219,14 @@ analytical_concepts:
     components:
       - age_65_66_male
       - age_65_66_female
+      - age_67_69_male
+      - age_67_69_female
+      - age_70_74_male
+      - age_70_74_female
+      - age_75_79_male
+      - age_75_79_female
+      - age_80_84_male
+      - age_80_84_female
       - age_85plus_male
       - age_85plus_female
     aggregation: sum
@@ -281,7 +302,7 @@ analytical_concepts:
     denominator: none
     formula: COUNT(DISTINCT warnings coversCounty county)
     interpretation: >
-      Higher values indicate greater frequency of NWS flood and flash flood
+      Higher values indicate greater frequency of NWS flash flood
       warnings issued for the county. Use as a prospective hazard exposure
       measure. Covers 2023-2025 only.
 
@@ -405,6 +426,14 @@ common_graph_paths:
       ?cd kg:forDeclaration ?decl ;
           kg:forCounty ?county .
       ?county kg:pop_total ?pop .
+
+  fema_program:
+    description: CountyDesignation program flags -> FEMADisasterDeclaration
+    sparql_pattern: |
+      ?cd a kg:CountyDesignation ;
+          kg:paProgramDeclared ?pa ;
+          kg:forDeclaration ?decl ;
+          kg:forCounty ?county .
 
   nws_exposure:
     description: NWSHazardProduct -> County -> ACS indicators
