@@ -62,6 +62,8 @@ async def test_all_kg_tools_are_discoverable():
     assert "kg_list_predicates_for_class" in names
     assert "kg_sample_instances" in names
     assert "kg_run_sparql" in names
+    assert "kg_get_schema" in names
+    assert "kg_get_query_guidelines" in names
 
 
 @pytest.mark.asyncio
@@ -290,3 +292,19 @@ def test_kg_run_sparql_partial_prefix_injection():
     injected = _inject_missing_prefixes(query)
     assert "PREFIX rdf:" in injected
     assert injected.count("PREFIX kg:") == 1
+
+
+@pytest.mark.asyncio
+async def test_kg_get_schema_returns_county_designation_properties():
+    async with Client(mcp) as client:
+        result = await client.call_tool("kg_get_schema", {})
+    text = result.data if isinstance(result.data, str) else str(result.data)
+    assert "county_designation_properties" in text
+
+
+@pytest.mark.asyncio
+async def test_kg_get_query_guidelines_returns_hallucination_prevention():
+    async with Client(mcp) as client:
+        result = await client.call_tool("kg_get_query_guidelines", {})
+    text = result.data if isinstance(result.data, str) else str(result.data)
+    assert "hallucination_prevention" in text

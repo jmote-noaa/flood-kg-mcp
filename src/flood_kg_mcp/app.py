@@ -8,6 +8,9 @@ Keep this file THIN. It only:
 
 All real logic lives in the submodules:
   - tools/      one file per tool (each exposes `register(mcp)`)
+                kg_get_schema, kg_get_query_guidelines — schema/guidelines as
+                tools so LangChain-based agents can access them without reading
+                MCP resources
   - prompts/    flood_kg_analyst — analyst system instructions
   - resources/  kg://schema — KG schema and query guidance
                kg://query-guidelines — analyst reasoning and SPARQL rules
@@ -33,18 +36,23 @@ mcp = FastMCP(
     instructions=(
         "This server exposes the Texas Flood Knowledge Graph — an integrated "
         "dataset covering NOAA Storm Events, FEMA Disaster Declarations, "
-        "ACS demographic/economic indicators, and NWS flood warnings for "
+        "ACS demographic/economic indicators, and NWS flash flood warnings for "
         "Texas counties.\n\n"
-        "Before writing any SPARQL query, read both resources:\n"
-        "  kg://schema           — namespaces, classes, relationships,\n"
-        "                          indicator formulas, analytical constructs\n"
-        "                          (vulnerability, resilience, exposure), and\n"
-        "                          common graph paths with SPARQL patterns.\n"
-        "  kg://query-guidelines — analyst reasoning principles, SPARQL\n"
-        "                          generation rules, cross-dataset patterns,\n"
-        "                          county rules, hallucination prevention.\n\n"
+        "Before writing any SPARQL query, call both tools to load the schema\n"
+        "and guidelines:\n"
+        "  kg_get_schema           — namespaces, classes, relationships,\n"
+        "                            indicator formulas, analytical constructs\n"
+        "                            (vulnerability, resilience, exposure), and\n"
+        "                            common graph paths with SPARQL patterns.\n"
+        "  kg_get_query_guidelines — analyst reasoning principles, SPARQL\n"
+        "                            generation rules, cross-dataset patterns,\n"
+        "                            county rules, hallucination prevention.\n"
+        "Clients that can read MCP resources may also use kg://schema and\n"
+        "kg://query-guidelines directly — both return identical content.\n\n"
         "Load the flood_kg_analyst prompt to prime a full analyst session.\n\n"
         "Available tools:\n"
+        "  kg_get_schema                 — full schema YAML (classes, formulas)\n"
+        "  kg_get_query_guidelines       — full analyst guidelines YAML\n"
         "  kg_list_classes               — list all RDF classes with instance counts\n"
         "  kg_list_predicates_for_class  — list predicates for a given class URI\n"
         "  kg_sample_instances           — fetch sample instances with all properties\n"

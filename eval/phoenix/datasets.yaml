@@ -1,0 +1,8 @@
+datasets:
+  flood-eval-0:
+    csv_path: datasets/flood-eval-0/examples/flood-eval-0.csv
+    input_keys:
+      - query
+    output_keys:
+      - responses
+    description: "10-question Texas Flood KG gold set (Q1-8 factual, Q9 refusal, Q10 out-of-scope)"

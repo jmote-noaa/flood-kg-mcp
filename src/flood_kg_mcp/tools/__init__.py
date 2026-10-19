@@ -12,6 +12,8 @@ To add a tool:
 from __future__ import annotations
 
 from flood_kg_mcp.tools import (
+    get_query_guidelines,
+    get_schema,
     list_classes,
     list_predicates_for_class,
     run_sparql,
@@ -25,6 +27,8 @@ def register_tools(mcp) -> None:
     list_predicates_for_class.register(mcp)
     sample_instances.register(mcp)
     run_sparql.register(mcp)
+    get_schema.register(mcp)
+    get_query_guidelines.register(mcp)
 
 
 __all__ = ["register_tools"]
