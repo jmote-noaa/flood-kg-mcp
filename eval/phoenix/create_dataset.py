@@ -96,22 +96,24 @@ def main() -> None:
 
     print(f"Dataset : {args.dataset_name}")
     print(f"CSV     : {csv_path}")
-    rows = validate_csv(csv_path, input_keys, output_keys)
+    validate_csv(csv_path, input_keys, output_keys)
 
     if args.dry_run:
         print("Dry run — skipping upload.")
         return
 
-    import phoenix as px
+    from phoenix.client import Client
 
-    client = px.Client(endpoint=args.phoenix_endpoint)
+    client = Client(base_url=args.phoenix_endpoint)
     client.datasets.create_dataset(
         name=phoenix_name,
-        inputs=[{k: row[k] for k in input_keys} for row in rows],
-        outputs=[{k: row[k] for k in output_keys} for row in rows],
+        csv_file_path=csv_path,
+        input_keys=input_keys,
+        output_keys=output_keys,
+        dataset_description=meta.get("description", ""),
     )
     print(
-        f"Uploaded '{phoenix_name}' ({len(rows)} examples) to {args.phoenix_endpoint}"
+        f"Uploaded '{phoenix_name}' ({args.phoenix_endpoint})"
     )
 
 

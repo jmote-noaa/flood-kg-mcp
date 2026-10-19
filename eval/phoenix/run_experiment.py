@@ -8,13 +8,13 @@ Usage:
     uv run run_experiment.py --dataset-name flood-eval-0
 
     # Multiple models, compared side-by-side in Phoenix:
-    uv run run_experiment.py --dataset-name flood-eval-0 \\
+    uv run run_experiment.py --dataset-name flood-eval-0 `
         --agent-model <model-id-1> --agent-model <model-id-2>
 
     # v2 prompt (schema inlined):
     uv run run_experiment.py --dataset-name flood-eval-0 --system-prompt-version v2
 
-    # Validate CSV without running:
+    # Skip CSV pre-flight check:
     uv run run_experiment.py --dataset-name flood-eval-0 --no-validate
 
 Run from eval/phoenix/ after: uv sync --group dev
@@ -54,10 +54,9 @@ def run_for_model(
     dataset_version_id: str | None,
 ) -> None:
     """Run the full dataset against a single model and log to Phoenix."""
-    import phoenix as px
     from agent import FloodKGAgent
     from judges import check_answer_scope, match_expected_response
-    from phoenix.experiments import run_experiment
+    from phoenix.client import Client
 
     print(f"\n{'='*60}")
     print(f"  Model  : {model}")
@@ -68,24 +67,24 @@ def run_for_model(
     agent = FloodKGAgent(system_prompt_version=system_prompt_version, model=model)
     agent.initialize(project_name=project_name, phoenix_endpoint=phoenix_endpoint)
 
-    client = px.Client(endpoint=phoenix_endpoint)
-    dataset = client.datasets.get_dataset(
-        name=dataset_name,
-        version_id=dataset_version_id,
-    )
+    client = Client(base_url=phoenix_endpoint)
+    get_kwargs: dict = {"dataset": dataset_name}
+    if dataset_version_id:
+        get_kwargs["version_id"] = dataset_version_id
+    dataset = client.datasets.get_dataset(**get_kwargs)
 
     exp_description = experiment_description or (
         f"prompt={system_prompt_version} model={model}"
     )
-    exp_name = f"{dataset_name}/{system_prompt_version}/{model}"
+    # Slashes in experiment names can cause display issues; use __ as separator.
+    exp_name = f"{dataset_name}__{system_prompt_version}__{model}"
 
-    run_experiment(
+    client.experiments.run_experiment(
         dataset=dataset,
         task=agent.create_experiment_task(),
         evaluators=[check_answer_scope, match_expected_response],
         experiment_name=exp_name,
         experiment_description=exp_description,
-        project_name=project_name,
     )
     print(f"  Done. View results at {phoenix_endpoint}")
 
@@ -95,22 +94,41 @@ def main() -> None:
     default_model = os.getenv("AGENT_MODEL", "")
 
     parser = argparse.ArgumentParser(description="Run flood-kg eval experiments.")
-    parser.add_argument("--dataset-name", required=True,
-                        choices=list(registry), help="Dataset name from datasets.yaml")
-    parser.add_argument("--agent-model", action="append", dest="agent_models",
-                        metavar="MODEL",
-                        help="USAi model id to evaluate (repeatable). "
-                             "Defaults to AGENT_MODEL from .env.")
-    parser.add_argument("--system-prompt-version", default="v1",
-                        choices=["v1", "v2"], help="Prompt version (default: v1)")
+    parser.add_argument(
+        "--dataset-name",
+        required=True,
+        choices=list(registry),
+        help="Dataset name from datasets.yaml",
+    )
+    parser.add_argument(
+        "--agent-model",
+        action="append",
+        dest="agent_models",
+        metavar="MODEL",
+        help="USAi model id to evaluate (repeatable). "
+             "Defaults to AGENT_MODEL from .env.",
+    )
+    parser.add_argument(
+        "--system-prompt-version",
+        default="v1",
+        choices=["v1", "v2"],
+        help="Prompt version (default: v1)",
+    )
     parser.add_argument("--project-name", default="flood-kg-eval")
     parser.add_argument("--phoenix-endpoint", default="http://localhost:6006")
-    parser.add_argument("--experiment-description",
-                        help="Override the auto-generated experiment description")
-    parser.add_argument("--dataset-version-id",
-                        help="Pin a specific Phoenix dataset version id")
-    parser.add_argument("--no-validate", action="store_true",
-                        help="Skip dataset CSV validation before running")
+    parser.add_argument(
+        "--experiment-description",
+        help="Override the auto-generated experiment description",
+    )
+    parser.add_argument(
+        "--dataset-version-id",
+        help="Pin a specific Phoenix dataset version id",
+    )
+    parser.add_argument(
+        "--no-validate",
+        action="store_true",
+        help="Skip CSV pre-flight check before running",
+    )
     args = parser.parse_args()
 
     models: list[str] = args.agent_models or ([default_model] if default_model else [])
