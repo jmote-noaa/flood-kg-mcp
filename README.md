@@ -1,172 +1,175 @@
-# GSA MCP Hackathon — Server Template
+# Texas Flood Knowledge Graph MCP Server
 
-A ready-to-run starter for building a [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server in Python, plus deployment kits for **IBM Cloud (watsonx Orchestrate)** and **Databricks**.  This particular repo is using IBM Cloud.
+An [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server that exposes the **Texas Flood Systems Knowledge Graph** to LLM agents. The graph integrates four datasets through shared county entities:
 
-Built with [FastMCP](https://github.com/jlowin/fastmcp) and [uv](https://docs.astral.sh/uv/). If you have never built an MCP server before, start with **[QUICKSTART.md](QUICKSTART.md)**.
+| Dataset | Description |
+|---|---|
+| NOAA Storm Events | Flood, flash-flood, and coastal-flood events with damage and casualty data |
+| FEMA Disaster Declarations | Federal declarations with per-county program designations (PA, IH, HM) |
+| ACS (American Community Survey) | Demographic, economic, housing, and communications indicators per county |
+| NWS Flash Flood Warnings | County-level flash flood warnings, 2023–2025 (Iowa Environmental Mesonet) |
+
+Built with [FastMCP](https://github.com/jlowin/fastmcp), [pyoxigraph](https://github.com/oxigraph/oxigraph), and [uv](https://docs.astral.sh/uv/).
 
 ---
 
-## What is an MCP server?
+## What the server exposes
 
-An MCP server exposes **tools** (functions the model can call), **prompts** (reusable conversation starters), and **resources** (data the model can read) to an AI client such as Claude Desktop, Claude Code, or an agent platform like watsonx Orchestrate. You write the tools; the client's model decides when to call them.
+### Tools
 
-This template gives you a working server with one example of each, so you can replace the examples with your own service and deploy.
+| Tool | Description |
+|---|---|
+| `kg_get_schema` | Full schema YAML — namespaces, classes, indicator formulas, analytical constructs, and SPARQL graph paths |
+| `kg_get_query_guidelines` | Full analyst guidelines YAML — reasoning rules, SPARQL conventions, cross-dataset patterns, hallucination prevention |
+| `kg_list_classes` | List every RDF class with instance counts |
+| `kg_list_predicates_for_class` | List predicates for a given class URI |
+| `kg_sample_instances` | Fetch sample instances with all properties |
+| `kg_run_sparql` | Execute a read-only SELECT or ASK query (200-row cap, default prefixes injected) |
 
----
+### Resources
 
-## Repo structure
+| URI | Description |
+|---|---|
+| `kg://schema` | Schema YAML (same content as `kg_get_schema`) |
+| `kg://query-guidelines` | Guidelines YAML (same content as `kg_get_query_guidelines`) |
 
-```
-mcp-hackathon-template/
-├── README.md                  # This file
-├── QUICKSTART.md              # 5-minute clone → run → connect walkthrough
-├── main.py                    # Local entry point (uv run python main.py)
-├── pyproject.toml             # Package + dependencies (uv)
-├── requirements.txt           # Mirror of runtime deps (for buildpack hosts)
-├── Dockerfile                 # Container image (streamable-HTTP, port 8080)
-├── manifest.yaml              # cloud.gov (Cloud Foundry) deploy
-├── server.json                # MCP registry metadata
-├── .env.example               # Copy to .env for local dev
-├── .github/workflows/ci.yml   # Lint + test on push/PR
-├── src/
-│   └── example_server/        # ← rename to your service
-│       ├── app.py             # Thin entry point: builds FastMCP, picks transport
-│       ├── config.py          # Settings from env vars / .env
-│       ├── models.py          # Pydantic models & enums for tool params
-│       ├── utils.py           # Shared helpers (HTTP client, pagination)
-│       ├── routes.py          # HTTP-only routes (/health, /version)
-│       ├── tools/             # ONE FILE PER TOOL
-│       │   ├── __init__.py    #   register_tools(mcp) aggregator
-│       │   └── example_tool.py
-│       ├── prompts/
-│       │   ├── __init__.py    #   register_prompts(mcp) aggregator
-│       │   └── example.py
-│       └── resources/
-│           ├── __init__.py    #   register_resources(mcp) aggregator
-│           └── example.py
-├── tests/                     # Import + registration smoke tests
-├── eval/                      # Stub → build a Phoenix eval harness (see mcp-eval skill)
-└── deploy/
-    ├── README.md              # Which deployment kit to use
-    ├── ibm/                   # watsonx Orchestrate: 3 kits (see below)
-    └── databricks/            # Databricks Apps kit
-```
+`kg_get_schema` and `kg_get_query_guidelines` exist as tools so LangChain-based agents (which load tools but not MCP resources) can access the schema without a resource read.
+
+### Prompt
+
+`flood_kg_analyst` — analyst system instructions covering the full reasoning and SPARQL workflow. Load at the start of a query session.
 
 ---
 
 ## Getting started
 
 ### Prerequisites
-- [uv](https://docs.astral.sh/uv/) — `pip install uv` or `brew install uv`
+
+- [uv](https://docs.astral.sh/uv/) — `pip install uv`
 
 ### Install and run
 
-```bash
-cp .env.example .env
+```powershell
+# copy env template and fill in any overrides (defaults work for local dev)
+Copy-Item .env.example .env
 uv sync
 uv run python main.py
 ```
 
-The server starts in **stdio** mode — it talks JSON-RPC over stdin/stdout, which is how local clients (Claude Desktop, Claude Code) launch it. See [QUICKSTART.md](QUICKSTART.md) to connect a client.
+The server starts in **stdio** mode — it communicates over stdin/stdout, which is how local clients (Claude Desktop, Claude Code) launch it as a subprocess.
+
+### Connect a client (Claude Code)
+
+Add to `.mcp.json` (or your user MCP config), using the **absolute path** to this repo:
+
+```json
+{
+  "mcpServers": {
+    "flood-kg": {
+      "command": "uv",
+      "args": ["run", "flood-kg-mcp"],
+      "cwd": "C:\\path\\to\\flood-kg-mcp"
+    }
+  }
+}
+```
 
 ### Verify
 
-```bash
+```powershell
 uv sync --group dev
-uv run pytest tests/ -v      # tests
-uv run ruff check .          # lint
+uv run pytest tests/ -v        # 48 tests
+uv run ruff check .            # lint
+uv run ruff format --check .   # format
 ```
 
 ---
 
-## The one-tool-per-file pattern
+## Repo structure
 
-Each tool lives in its own file under `src/example_server/tools/` and exposes a `register(mcp)` function. `tools/__init__.py` calls each one from a single `register_tools(mcp)`. This keeps the tool list scannable and lets you add or remove an integration by touching two files.
-
-**Step 1 — create `src/example_server/tools/my_tool.py`:**
-
-```python
-from typing import Annotated
-from urllib.parse import quote
-from fastmcp import FastMCP
-
-from example_server.utils import fetch_json
-
-
-def register(mcp: FastMCP) -> None:
-    @mcp.tool(
-        name="example_get_thing",
-        annotations={
-            "title": "Get a thing",
-            "readOnlyHint": True,
-            "destructiveHint": False,
-            "idempotentHint": True,
-            "openWorldHint": True,
-        },
-    )
-    async def get_thing(thing_id: Annotated[str, "The ID to fetch."]) -> dict:
-        """One-line summary. Document the data source, its update cadence,
-        and the return shape here — the model reads this docstring."""
-        safe_id = quote(thing_id, safe="")
-        return await fetch_json(f"things/{safe_id}")
 ```
-
-**Step 2 — wire it up in `tools/__init__.py`:**
-
-```python
-from example_server.tools import example_tool, my_tool
-
-def register_tools(mcp) -> None:
-    example_tool.register(mcp)
-    my_tool.register(mcp)  # ← add this line
+flood-kg-mcp/
+├── main.py                         # Local entry point
+├── pyproject.toml                  # Dependencies (uv)
+├── .env.example                    # Env var template
+├── data/
+│   ├── texas_flood2.ttl            # Knowledge graph (Turtle)
+│   ├── schema_prototype2.yml       # Schema + indicator formulas (kg://schema)
+│   └── prompt_guidelines2.yml      # Analyst guidelines (kg://query-guidelines)
+├── src/flood_kg_mcp/
+│   ├── app.py                      # Server entry point + transport selection
+│   ├── config.py                   # Settings from env / .env
+│   ├── tools/
+│   │   ├── get_schema.py           # kg_get_schema
+│   │   ├── get_query_guidelines.py # kg_get_query_guidelines
+│   │   ├── list_classes.py         # kg_list_classes
+│   │   ├── list_predicates_for_class.py
+│   │   ├── sample_instances.py     # kg_sample_instances
+│   │   └── run_sparql.py           # kg_run_sparql
+│   ├── prompts/
+│   │   └── flood_kg_analyst.py     # flood_kg_analyst prompt
+│   └── resources/
+│       ├── schema.py               # kg://schema
+│       └── query_guidelines.py     # kg://query-guidelines
+├── tests/                          # Pytest suite (server, tools, security)
+├── eval/
+│   ├── phoenix/                    # LangChain + Phoenix eval harness
+│   │   ├── agent.py                # FloodKGAgent (stdio, multi-model)
+│   │   ├── create_dataset.py       # CLI: upload CSV to Phoenix
+│   │   ├── run_experiment.py       # CLI: run agent + judges
+│   │   ├── judges/                 # LLM-as-judge evaluators
+│   │   ├── prompts/                # system_prompt_v1.txt / v2.txt
+│   │   └── datasets/flood-eval-0/ # 10-question gold set + CSV
+│   └── databricks/                 # MLflow eval for deployed Databricks app
+└── deploy/
+    ├── ibm/                        # watsonx Orchestrate (3 kits)
+    └── databricks/                 # Databricks Apps kit
 ```
-
-**Step 3 — add any API key** as a typed field in `config.py` and document the env var in `.env.example`.
-
-Prompts (`prompts/`) and resources (`resources/`) follow the exact same `register(mcp)` + aggregator pattern.
 
 ---
 
-## Rename the package
+## Analytical constructs
 
-Before publishing your server, rename `example_server` to your service (e.g. `census_mcp`):
+The schema defines four analytical constructs that agents must follow:
 
-1. Rename the folder `src/example_server/` → `src/<your_name>/`.
-2. Update `pyproject.toml`: the `[project].name`, `[project.scripts]`, and `[tool.hatch.build.targets.wheel].packages`.
-3. Find-and-replace `example_server` across `src/`, `tests/`, `main.py`, `Dockerfile`, and `manifest.yaml`.
+| Construct | Primary indicators | Approach |
+|---|---|---|
+| **vulnerability** | poverty_rate, elderly_share, mobile_home_share, vehicle_access_deficit | Separate ranked query per indicator — never a composite index |
+| **resilience** | broadband_access_rate, internet_access_rate, bachelors_rate, owner_share | Rank counties per indicator; lower vehicle_access_deficit = more resilient |
+| **exposure** | nws_warning_frequency + vulnerability indicators | Cross-dataset join through County; always combine a hazard measure with ACS |
+| **recovery_capacity** | median_hh_income, owner_share, broadband_access_rate | Not pre-computed; acknowledge limitation when asked directly |
+
+Composite indices not defined in the schema must be declined. See `kg://schema` for full indicator formulas and `kg://query-guidelines` for the hallucination-prevention rules.
 
 ---
 
-## Tool design tips (federal data)
+## Evaluation
 
-- **Return structured data, not prose.** Return dicts/lists with consistent keys and let the model narrate.
-- **Document freshness.** Federal datasets lag; state the update frequency and "as-of" date in the docstring.
-- **Expose pagination.** Use `PaginationParams` / `paginate()` from `utils.py`, and return `has_more` / `next_offset`.
-- **Use explicit timeouts.** `utils.fetch_json` defaults to 30s.
-- **Actionable errors.** Return an error dict with a `hint`, not a raw stack trace.
-- **Constrain outbound requests.** Keep API origins in operator-controlled code or configuration, pass only validated relative paths to `fetch_json`, and encode path segments. Never pass a tool-supplied URL directly to an HTTP client.
-- **Treat redirects and DNS as security boundaries.** Redirects are disabled by default. A server that must fetch caller-supplied URLs needs connection-time IP validation on every hop plus network egress controls; a one-time DNS check is not sufficient.
-- **Keep sensitive data out of errors and logs.** Do not expose or log upstream bodies, headers, full URLs, query strings, credentials, stack traces, SSNs, dates of birth, or addresses.
+A 10-question gold evaluation set with verified SPARQL ground truth lives in [`eval/phoenix/datasets/flood-eval-0/`](eval/phoenix/datasets/flood-eval-0/). The Phoenix harness supports:
+
+- Multiple agent models compared sequentially in a single run
+- Two prompt versions: v1 (tool-call baseline) and v2 (schema inlined at runtime)
+- Two LLM-as-judge evaluators: correctness (numeric tolerance, ranked-list 80% rule) and scope (appropriate/inappropriate handling)
+
+See [`eval/phoenix/README.md`](eval/phoenix/README.md) for setup and usage.
 
 ---
 
 ## Deploying
 
-Local development uses stdio. To share your server with an agent platform, deploy it and register it. See **[deploy/README.md](deploy/README.md)** for a chooser, then:
+`app.py` auto-selects transport based on the environment:
 
-- **IBM watsonx Orchestrate** — [deploy/ibm/](deploy/ibm/) (three kits: local stdio toolkit, Code Engine build-from-Git, and prebuilt image).
-- **Databricks Apps** — [deploy/databricks/](deploy/databricks/).
+- Platform-injected port (`DATABRICKS_APP_PORT` or `PORT`) → HTTP
+- `MCP_TRANSPORT=streamable-http` → HTTP on `MCP_HOST:MCP_PORT`
+- Otherwise → stdio
 
-Both read the same server code; `app.py` automatically serves HTTP when the platform injects a port.
+See [`deploy/README.md`](deploy/README.md) for deployment kits:
 
----
-
-## Evaluations
-
-Measuring how well an LLM can use your tools is the real test of server quality. This template intentionally does **not** ship an eval harness — see [eval/README.md](eval/README.md) for how to build one with the `mcp-eval` skill.
+- **IBM watsonx Orchestrate** — [`deploy/ibm/`](deploy/ibm/) (local stdio toolkit, Code Engine build-from-Git, or prebuilt image)
+- **Databricks Apps** — [`deploy/databricks/`](deploy/databricks/)
 
 ---
 
 ## License
 
-[MIT](LICENSE). See [SECURITY.md](SECURITY.md) for the vulnerability disclosure policy and hackathon security notes.
+[MIT](LICENSE). See [SECURITY.md](SECURITY.md) for the vulnerability disclosure policy.
