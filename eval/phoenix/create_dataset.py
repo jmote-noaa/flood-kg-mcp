@@ -112,9 +112,7 @@ def main() -> None:
         output_keys=output_keys,
         dataset_description=meta.get("description", ""),
     )
-    print(
-        f"Uploaded '{phoenix_name}' ({args.phoenix_endpoint})"
-    )
+    print(f"Uploaded '{phoenix_name}' ({args.phoenix_endpoint})")
 
 
 if __name__ == "__main__":

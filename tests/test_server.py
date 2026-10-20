@@ -17,6 +17,7 @@ from flood_kg_mcp.utils import (
 
 # ── Server bootstrap ──────────────────────────────────────────────────────────
 
+
 def test_server_is_importable():
     assert mcp is not None
 
@@ -32,27 +33,33 @@ def test_default_transport_is_stdio():
 
 # ── Submodule registration ────────────────────────────────────────────────────
 
+
 def test_tools_register_without_error():
     from flood_kg_mcp.tools import register_tools
+
     register_tools(FastMCP("test"))
 
 
 def test_prompts_register_without_error():
     from flood_kg_mcp.prompts import register_prompts
+
     register_prompts(FastMCP("test"))
 
 
 def test_resources_register_without_error():
     from flood_kg_mcp.resources import register_resources
+
     register_resources(FastMCP("test"))
 
 
 def test_routes_register_without_error():
     from flood_kg_mcp.routes import register_routes
+
     register_routes(FastMCP("test"))
 
 
 # ── Tool discoverability ──────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_all_kg_tools_are_discoverable():
@@ -75,12 +82,14 @@ async def test_example_tool_is_gone():
 
 # ── KG store ──────────────────────────────────────────────────────────────────
 
+
 def test_store_loads_triples():
     """Store must be non-empty — catches a missing or empty data file."""
     assert len(get_store()) > 0
 
 
 # ── Resources ─────────────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_schema_resource_is_registered():
@@ -109,6 +118,7 @@ async def test_query_guidelines_resource_returns_yaml():
 
 # ── Prompt ────────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_flood_kg_analyst_prompt_is_registered():
     prompts = await mcp.list_prompts()
@@ -128,6 +138,7 @@ async def test_flood_kg_analyst_prompt_returns_guidelines():
 
 
 # ── Tool behaviour (via FastMCP in-memory Client) ─────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_kg_list_classes_returns_uri_count_label():

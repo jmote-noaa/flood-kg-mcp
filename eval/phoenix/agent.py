@@ -119,14 +119,16 @@ class FloodKGAgent:
         from langchain_openai import ChatOpenAI
         from langgraph.prebuilt import create_react_agent
 
-        self._client = MultiServerMCPClient({
-            "flood_kg_server": {
-                "transport": "stdio",
-                "command": "uv",
-                "args": ["run", "python", "src/flood_kg_mcp/app.py"],
-                "cwd": str(REPO_ROOT),
+        self._client = MultiServerMCPClient(
+            {
+                "flood_kg_server": {
+                    "transport": "stdio",
+                    "command": "uv",
+                    "args": ["run", "python", "src/flood_kg_mcp/app.py"],
+                    "cwd": str(REPO_ROOT),
+                }
             }
-        })
+        )
         tools = await self._client.get_tools()
 
         llm = ChatOpenAI(
@@ -191,6 +193,7 @@ class FloodKGAgent:
 
 
 # ── Smoke test ────────────────────────────────────────────────────────────────
+
 
 async def _smoke_test() -> None:
     agent = FloodKGAgent(system_prompt_version="v1")

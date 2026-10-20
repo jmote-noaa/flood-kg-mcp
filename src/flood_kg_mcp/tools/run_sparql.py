@@ -28,11 +28,11 @@ from flood_kg_mcp.utils import get_store
 MAX_ROWS = 200
 
 _DEFAULT_PREFIXES: list[tuple[str, str]] = [
-    ("kg",    "http://floodkg.org/"),
+    ("kg", "http://floodkg.org/"),
     ("flood", "http://example.org/flood-ontology#"),
-    ("rdf",   "http://www.w3.org/1999/02/22-rdf-syntax-ns#"),
-    ("rdfs",  "http://www.w3.org/2000/01/rdf-schema#"),
-    ("xsd",   "http://www.w3.org/2001/XMLSchema#"),
+    ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#"),
+    ("rdfs", "http://www.w3.org/2000/01/rdf-schema#"),
+    ("xsd", "http://www.w3.org/2001/XMLSchema#"),
 ]
 
 

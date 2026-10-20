@@ -58,11 +58,11 @@ def run_for_model(
     from judges import check_answer_scope, match_expected_response
     from phoenix.client import Client
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  Model  : {model}")
     print(f"  Prompt : system_prompt_{system_prompt_version}.txt")
     print(f"  Dataset: {dataset_name}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     agent = FloodKGAgent(system_prompt_version=system_prompt_version, model=model)
     agent.initialize(project_name=project_name, phoenix_endpoint=phoenix_endpoint)
@@ -106,7 +106,7 @@ def main() -> None:
         dest="agent_models",
         metavar="MODEL",
         help="USAi model id to evaluate (repeatable). "
-             "Defaults to AGENT_MODEL from .env.",
+        "Defaults to AGENT_MODEL from .env.",
     )
     parser.add_argument(
         "--system-prompt-version",
