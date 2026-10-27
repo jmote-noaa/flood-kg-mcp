@@ -144,8 +144,10 @@ async def test_flood_kg_analyst_prompt_returns_guidelines():
 async def test_kg_list_classes_returns_uri_count_label():
     async with Client(mcp) as client:
         result = await client.call_tool("kg_list_classes", {})
-    rows = result.data
-    assert isinstance(rows, list)
+    data = result.data
+    assert isinstance(data, dict)
+    assert "results" in data
+    rows = data["results"]
     assert len(rows) > 0
     first = rows[0]
     assert "uri" in first
@@ -174,8 +176,10 @@ async def test_kg_list_predicates_valid_class():
             "kg_list_predicates_for_class",
             {"class_uri": "http://floodkg.org/FloodEvent"},
         )
-    predicates = result.data
-    assert isinstance(predicates, list)
+    data = result.data
+    assert isinstance(data, dict)
+    assert "results" in data
+    predicates = data["results"]
     assert len(predicates) > 0
     assert not predicates[0].startswith("<")
 
@@ -188,12 +192,14 @@ async def test_kg_sample_instances_returns_results():
             {"class_uri": "http://floodkg.org/FloodEvent", "limit": 2},
         )
     data = result.data
-    assert isinstance(data, list)
-    assert len(data) <= 2
-    if data:
-        assert "subject" in data[0]
-        assert "properties" in data[0]
-        assert not data[0]["subject"].startswith("<")
+    assert isinstance(data, dict)
+    assert "results" in data
+    rows = data["results"]
+    assert len(rows) <= 2
+    if rows:
+        assert "subject" in rows[0]
+        assert "properties" in rows[0]
+        assert not rows[0]["subject"].startswith("<")
 
 
 @pytest.mark.asyncio
@@ -309,13 +315,17 @@ def test_kg_run_sparql_partial_prefix_injection():
 async def test_kg_get_schema_returns_county_designation_properties():
     async with Client(mcp) as client:
         result = await client.call_tool("kg_get_schema", {})
-    text = result.data if isinstance(result.data, str) else str(result.data)
-    assert "county_designation_properties" in text
+    data = result.data
+    assert isinstance(data, dict)
+    assert "content" in data
+    assert "county_designation_properties" in data["content"]
 
 
 @pytest.mark.asyncio
 async def test_kg_get_query_guidelines_returns_hallucination_prevention():
     async with Client(mcp) as client:
         result = await client.call_tool("kg_get_query_guidelines", {})
-    text = result.data if isinstance(result.data, str) else str(result.data)
-    assert "hallucination_prevention" in text
+    data = result.data
+    assert isinstance(data, dict)
+    assert "content" in data
+    assert "hallucination_prevention" in data["content"]

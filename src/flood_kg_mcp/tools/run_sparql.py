@@ -62,6 +62,7 @@ def register(mcp: FastMCP) -> None:
 
     @mcp.tool(
         name="kg_run_sparql",
+        output_schema=None,
         annotations={
             "title": "Run SPARQL Query on KG",
             "readOnlyHint": True,

@@ -17,6 +17,7 @@ def register(mcp: FastMCP) -> None:
 
     @mcp.tool(
         name="kg_get_schema",
+        output_schema=None,
         annotations={
             "title": "Get KG Schema",
             "readOnlyHint": True,
@@ -25,7 +26,7 @@ def register(mcp: FastMCP) -> None:
             "openWorldHint": False,
         },
     )
-    def kg_get_schema() -> str:
+    def kg_get_schema() -> dict:
         """Return the full kg://schema YAML for the Texas Flood Knowledge Graph.
 
         Contains namespaces, dataset classes, primary relationships, property
@@ -37,4 +38,4 @@ def register(mcp: FastMCP) -> None:
         kg://schema MCP resource.
         """
         with open(settings.kg_schema_path, encoding="utf-8") as fh:
-            return fh.read()
+            return {"content": fh.read()}

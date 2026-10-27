@@ -17,6 +17,7 @@ def register(mcp: FastMCP) -> None:
 
     @mcp.tool(
         name="kg_get_query_guidelines",
+        output_schema=None,
         annotations={
             "title": "Get Query Guidelines",
             "readOnlyHint": True,
@@ -25,7 +26,7 @@ def register(mcp: FastMCP) -> None:
             "openWorldHint": False,
         },
     )
-    def kg_get_query_guidelines() -> str:
+    def kg_get_query_guidelines() -> dict:
         """Return the full kg://query-guidelines YAML for the Texas Flood KG.
 
         Contains reasoning principles, SPARQL generation rules, cross-dataset
@@ -36,4 +37,4 @@ def register(mcp: FastMCP) -> None:
         to the kg://query-guidelines MCP resource.
         """
         with open(settings.kg_guidelines_path, encoding="utf-8") as fh:
-            return fh.read()
+            return {"content": fh.read()}

@@ -37,6 +37,7 @@ def register(mcp: FastMCP) -> None:
 
     @mcp.tool(
         name="kg_sample_instances",
+        output_schema=None,
         annotations={
             "title": "Sample Instances of a KG Class",
             "readOnlyHint": True,
@@ -55,10 +56,10 @@ def register(mcp: FastMCP) -> None:
             int,
             "Number of instances to return (1–50, default 10).",
         ] = 10,
-    ) -> list[dict] | dict:
+    ) -> dict:
         """Return a sample of instances for a given RDF class.
 
-        Each result object contains:
+        Returns {"results": [...]} where each item contains:
           - subject:    the instance URI (or blank-node identifier)
           - properties: list of {predicate, object} pairs for that subject
 
@@ -111,4 +112,4 @@ def register(mcp: FastMCP) -> None:
             ]
             results.append({"subject": subj_term.value, "properties": pairs})
 
-        return results
+        return {"results": results}

@@ -32,6 +32,7 @@ def register(mcp: FastMCP) -> None:
 
     @mcp.tool(
         name="kg_list_predicates_for_class",
+        output_schema=None,
         annotations={
             "title": "List Predicates for a KG Class",
             "readOnlyHint": True,
@@ -47,11 +48,11 @@ def register(mcp: FastMCP) -> None:
             "http://floodkg.org/FloodEvent. Call kg_list_classes first to "
             "discover available class URIs.",
         ],
-    ) -> list[str] | dict:
+    ) -> dict:
         """List all distinct predicates used by instances of a given RDF class.
 
-        Returns a sorted list of predicate URIs (plain strings, no angle
-        brackets). Returns an error dict if class_uri is not a valid IRI.
+        Returns {"results": [...]} with sorted predicate URIs (plain strings,
+        no angle brackets). Returns an error dict if class_uri is not a valid IRI.
 
         Read kg://schema for namespace prefixes and query guidance before
         writing SPARQL against this graph.
@@ -65,10 +66,12 @@ def register(mcp: FastMCP) -> None:
             }
 
         store = get_store()
-        return [
-            solution["predicate"].value
-            for solution in store.query(
-                _QUERY,
-                substitutions={pyoxigraph.Variable("class"): class_node},
-            )
-        ]
+        return {
+            "results": [
+                solution["predicate"].value
+                for solution in store.query(
+                    _QUERY,
+                    substitutions={pyoxigraph.Variable("class"): class_node},
+                )
+            ]
+        }

@@ -29,6 +29,7 @@ def register(mcp: FastMCP) -> None:
 
     @mcp.tool(
         name="kg_list_classes",
+        output_schema=None,
         annotations={
             "title": "List KG Classes",
             "readOnlyHint": True,
@@ -37,10 +38,10 @@ def register(mcp: FastMCP) -> None:
             "openWorldHint": False,
         },
     )
-    def kg_list_classes() -> list[dict]:
+    def kg_list_classes() -> dict:
         """List every RDF class in the Texas Flood Knowledge Graph.
 
-        Returns a list of objects sorted by instance_count descending, each with:
+        Returns {"results": [...]} where each item has:
           - uri:            the full class URI (plain string, no angle brackets)
           - label:          rdfs:label value if present, otherwise null
           - instance_count: number of distinct subjects typed as this class
@@ -59,4 +60,4 @@ def register(mcp: FastMCP) -> None:
                     "instance_count": int(solution["count"].value),
                 }
             )
-        return rows
+        return {"results": rows}

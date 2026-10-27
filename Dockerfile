@@ -18,13 +18,15 @@ ENV KG_DATA_PATH=/app/data/texas_flood2.ttl
 
 WORKDIR /app
 
-# Install uv (fast, reproducible installs).
+# Install uv. Package versions are pinned via uv.lock, so :latest is fine here.
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 # Install dependencies first for better layer caching.
-COPY pyproject.toml README.md ./
+COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
-RUN uv pip install --system --no-cache .
+RUN uv export --no-dev --frozen --no-emit-project --no-hashes -o requirements.lock && \
+    uv pip install --system --no-cache -r requirements.lock && \
+    uv pip install --system --no-cache --no-deps .
 
 # Knowledge graph data loaded into pyoxigraph at startup.
 COPY data ./data
