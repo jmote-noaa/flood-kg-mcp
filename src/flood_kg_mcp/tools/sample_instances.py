@@ -10,12 +10,15 @@ limit is validated as an integer 1-50 before use.
 
 from __future__ import annotations
 
+import logging
 from typing import Annotated
 
 import pyoxigraph
 from fastmcp import FastMCP
 
 from flood_kg_mcp.utils import get_store
+
+_log = logging.getLogger(__name__)
 
 # {{ }} escapes literal braces so .format() only touches {limit}.
 _SUBJECTS_QUERY = """\
@@ -66,9 +69,10 @@ def register(mcp: FastMCP) -> None:
         Returns an error dict if class_uri is not a valid IRI or limit is
         out of range.
 
-        Read kg://schema for namespace prefixes and query guidance before
+        Call kg_get_schema for namespace prefixes and query guidance before
         writing SPARQL against this graph.
         """
+        _log.info("tool=kg_sample_instances class_uri=%r limit=%d", class_uri, limit)
         if not 1 <= limit <= 50:
             return {
                 "error": f"limit must be between 1 and 50, got {limit}.",

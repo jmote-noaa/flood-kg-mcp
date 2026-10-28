@@ -7,9 +7,13 @@ The content is identical to what kg://query-guidelines returns.
 
 from __future__ import annotations
 
+import logging
+
 from fastmcp import FastMCP
 
 from flood_kg_mcp.config import settings
+
+_log = logging.getLogger(__name__)
 
 
 def register(mcp: FastMCP) -> None:
@@ -27,14 +31,15 @@ def register(mcp: FastMCP) -> None:
         },
     )
     def kg_get_query_guidelines() -> dict:
-        """Return the full kg://query-guidelines YAML for the Texas Flood KG.
+        """Return the full query-guidelines YAML for the Texas Flood KG.
 
         Contains reasoning principles, SPARQL generation rules, cross-dataset
         patterns, county harmonisation rules, analytical reasoning guidance,
         known graph issues, and hallucination-prevention rules.
 
-        Read this before writing complex or cross-dataset queries. Equivalent
+        Call this before writing complex or cross-dataset queries. Equivalent
         to the kg://query-guidelines MCP resource.
         """
+        _log.info("tool=kg_get_query_guidelines")
         with open(settings.kg_guidelines_path, encoding="utf-8") as fh:
             return {"content": fh.read()}

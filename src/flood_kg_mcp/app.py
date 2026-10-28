@@ -21,7 +21,9 @@ All real logic lives in the submodules:
 
 from __future__ import annotations
 
+import logging
 import os
+import sys
 
 from fastmcp import FastMCP
 
@@ -30,6 +32,12 @@ from flood_kg_mcp.prompts import register_prompts
 from flood_kg_mcp.resources import register_resources
 from flood_kg_mcp.routes import register_routes
 from flood_kg_mcp.tools import register_tools
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+    stream=sys.stderr,
+)
 
 mcp = FastMCP(
     name="Flood Knowledge Graph MCP Server",

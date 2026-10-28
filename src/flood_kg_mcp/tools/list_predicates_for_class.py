@@ -10,12 +10,15 @@ passed via store.query() substitutions, never interpolated into query text.
 
 from __future__ import annotations
 
+import logging
 from typing import Annotated
 
 import pyoxigraph
 from fastmcp import FastMCP
 
 from flood_kg_mcp.utils import get_store
+
+_log = logging.getLogger(__name__)
 
 # ?class must appear in SELECT for pyoxigraph substitutions to accept the binding.
 # Its value is constant (the bound node) and is not included in the return value.
@@ -54,9 +57,10 @@ def register(mcp: FastMCP) -> None:
         Returns {"results": [...]} with sorted predicate URIs (plain strings,
         no angle brackets). Returns an error dict if class_uri is not a valid IRI.
 
-        Read kg://schema for namespace prefixes and query guidance before
+        Call kg_get_schema for namespace prefixes and query guidance before
         writing SPARQL against this graph.
         """
+        _log.info("tool=kg_list_predicates_for_class class_uri=%r", class_uri)
         try:
             class_node = pyoxigraph.NamedNode(class_uri)
         except ValueError:

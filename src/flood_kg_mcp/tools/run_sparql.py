@@ -18,12 +18,15 @@ without declaring it still works even if it declares kg:.
 
 from __future__ import annotations
 
+import logging
 from typing import Annotated
 
 import pyoxigraph
 from fastmcp import FastMCP
 
 from flood_kg_mcp.utils import get_store
+
+_log = logging.getLogger(__name__)
 
 MAX_ROWS = 200
 
@@ -91,20 +94,22 @@ def register(mcp: FastMCP) -> None:
         CONSTRUCT and DESCRIBE are rejected. Updates (INSERT, DELETE, etc.)
         are rejected by pyoxigraph before execution.
 
-        Read kg://schema first -- it contains namespace prefixes, class names,
+        Call kg_get_schema first -- it contains namespace prefixes, class names,
         and example queries for this graph.
         """
         _HINT = (
-            "Check your SPARQL syntax. Read kg://schema for the graph "
+            "Check your SPARQL syntax. Call kg_get_schema for the graph "
             "structure, available classes, and example queries."
         )
 
+        _log.info("tool=kg_run_sparql query=%r", query[:500])
         full_query = _inject_missing_prefixes(query)
 
         try:
             result = get_store().query(full_query)
 
             if isinstance(result, pyoxigraph.QueryBoolean):
+                _log.info("tool=kg_run_sparql result=ASK value=%s", bool(result))
                 return {"result": bool(result)}
 
             if isinstance(result, pyoxigraph.QuerySolutions):
@@ -118,6 +123,11 @@ def register(mcp: FastMCP) -> None:
                         truncated = True
                         break
                     rows.append({v: _term_value(solution[v]) for v in variables})
+                _log.info(
+                    "tool=kg_run_sparql rows=%d truncated=%s",
+                    len(rows),
+                    truncated,
+                )
                 response: dict = {"results": rows}
                 if truncated:
                     response["truncated"] = True
@@ -126,8 +136,9 @@ def register(mcp: FastMCP) -> None:
             # QueryTriples -- CONSTRUCT or DESCRIBE
             return {
                 "error": "CONSTRUCT and DESCRIBE queries are not supported.",
-                "hint": "Use SELECT or ASK. Read kg://schema for example queries.",
+                "hint": "Use SELECT or ASK. Call kg_get_schema for example queries.",
             }
 
         except Exception as exc:
+            _log.info("tool=kg_run_sparql error=%r", str(exc))
             return {"error": str(exc), "hint": _HINT}

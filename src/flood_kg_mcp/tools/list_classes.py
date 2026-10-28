@@ -7,9 +7,13 @@ and its rdfs:label if one exists, sorted by instance count descending.
 
 from __future__ import annotations
 
+import logging
+
 from fastmcp import FastMCP
 
 from flood_kg_mcp.utils import get_store
+
+_log = logging.getLogger(__name__)
 
 _QUERY = """\
 PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -46,9 +50,10 @@ def register(mcp: FastMCP) -> None:
           - label:          rdfs:label value if present, otherwise null
           - instance_count: number of distinct subjects typed as this class
 
-        Read kg://schema for namespace prefixes and query guidance before
+        Call kg_get_schema for namespace prefixes and query guidance before
         writing SPARQL against this graph.
         """
+        _log.info("tool=kg_list_classes")
         store = get_store()
         rows = []
         for solution in store.query(_QUERY):
