@@ -92,22 +92,20 @@ chat_with_docs:
 starter_prompts:
   is_default_prompts: false
   prompts:
-  - id: default0
-    title: What can you do for me?
-    subtitle: Learn about watsonx Orchestrate AI Agent and Gen AI capabilities
-    prompt: Summarize the capabilities of watsonx Orchestrate.
+  - id: flood0
+    title: Most vulnerable counties
+    subtitle: Ranked by each vulnerability indicator
+    prompt: Which counties are most vulnerable to flooding?
     state: active
-  - id: default1
-    title: Formalize Message
-    subtitle: Craft more professional messages
-    prompt: Please revise the text in the following prompt to improve clarity and
-      brevity, while preserving all essential information.
+  - id: flood1
+    title: FEMA and poverty
+    subtitle: Cross-dataset analysis
+    prompt: Which FEMA-designated counties have the highest poverty rates?
     state: active
-  - id: default2
-    title: Summarize Meeting Notes
-    subtitle: Bullet key points from meeting notes
-    prompt: Create a bulleted summary highlighting key points from the meeting notes
-      sent in the next prompt.
+  - id: flood2
+    title: Flash flood warnings
+    subtitle: NWS warning patterns
+    prompt: Which counties received the most NWS flash flood warnings?
     state: active
 welcome_content:
   welcome_message: Ask me about flood hazards and community vulnerability in Texas Counties (2023-2025)
