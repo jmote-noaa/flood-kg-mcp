@@ -21,6 +21,16 @@ Most MCP servers wrap a REST API with a fixed set of endpoints. This one exposes
 
 The graph is grounded in a flood ontology developed through a participatory expert workshop co-hosted with the Natural Hazards Center.
 
+### How the data is served: Oxigraph as an in-memory triple store
+
+The MCP server queries an embedded [Oxigraph](https://github.com/oxigraph/oxigraph) triple store, used through its Python binding, [pyoxigraph](https://pyoxigraph.readthedocs.io/). There is no separate database server:
+
+1. **At startup**, the server loads `data/texas_flood2.ttl` (108,137 triples, roughly 10 MB of Turtle) into an in-memory Oxigraph store. Loading takes about a second, and the server fails fast if the file is missing or malformed.
+2. **On each tool call**, the SPARQL query runs directly against that store inside the same process. No network hop and no external service are involved.
+3. **The store is read-only in practice.** The server only ever runs SELECT and ASK queries against it, and it is rebuilt from the Turtle file on every start, so nothing an agent does can change the data.
+
+This keeps deployment to a single container: the graph ships inside the image, and Oxigraph supports full SPARQL 1.1 querying without a database to install or operate. The trade-offs are that the whole graph lives in memory (well under 1 GB here), that each cold start reloads it, and that updating the data means rebuilding the image. A larger or frequently updated graph would move to a hosted triple store, such as Amazon Neptune or GraphDB, with the MCP tools unchanged apart from where queries are sent.
+
 Example questions the agent answers:
 - *Which counties are most vulnerable to flooding?* (separate rankings for each vulnerability indicator)
 - *Which FEMA-designated counties have the highest poverty rates?*
@@ -57,8 +67,9 @@ The schema and guidelines are also exposed as tools because some clients, includ
 ```
 User → watsonx Orchestrate agent → MCP (streamable HTTP) → IBM Code Engine
                                                             └─ FastMCP server
-                                                               └─ pyoxigraph store
-                                                                  (data/texas_flood2.ttl)
+                                                               └─ Oxigraph in-memory triple store
+                                                                  (pyoxigraph, loaded from
+                                                                   data/texas_flood2.ttl)
 ```
 
 | Path | Contents |
@@ -104,6 +115,33 @@ The agent file refers to tools by toolkit name, so update its `tools:` entries i
 ## Evaluation
 
 A 10-question gold dataset (`eval/phoenix/datasets/flood-eval-0/evaluation.xml`) covers counts, cross-dataset joins, rates, a multi-indicator construct, a derived property, a refusal case, and an out-of-scope case. Every gold answer was produced by running SPARQL directly against the graph; the queries are in `eval/phoenix/scratch/`.
+
+**watsonx Orchestrate agent: 10/10.** Each question was asked in a fresh chat and checked against the gold answer and the server logs.
+
+Three findings from that testing:
+1. **The model fabricated results despite correct queries.** For two questions, the agent wrote the right SPARQL and received the right rows, then presented invented ones. A guideline requiring it to report only rows returned by `kg_run_sparql` fixed this.
+2. **The model built a composite score the schema forbids.** A guideline and instruction to decline composite indexes and offer individual indicators fixed this.
+3. **Earlier answers leak into later ones.** In a continuing chat, the agent reused a previous result instead of applying a new filter. Evaluation questions should each run in a fresh chat.
+
+Building the gold answers also surfaced and fixed several schema errors (program flags documented on the wrong class, an undercounted elderly population, NWS coverage overstated) that would have misled any agent.
+
+An automated harness using [Arize Phoenix](https://docs.arize.com/phoenix) with LLM judges is in `eval/phoenix/`. It compares a minimal prompt with one that includes the schema up front, across multiple models. See `eval/phoenix/README.md`.
+
+---
+
+## Known limitations
+
+- NWS data contains flash flood warnings (FF) only; flood warnings (FA) were lost in the graph build.
+- One FEMA declaration title has a trailing space (`"HURRICANE BERYL "`), so exact title matches fail.
+- The broadband access rate divides by households with internet access, which leaves little variation between counties.
+- Indicators for very small counties (such as Loving and Kenedy) are based on few residents and can be extreme.
+- SPARQL queries have no execution timeout.
+- The deployed endpoint has no authentication, matching the hackathon's public-data setup.
+
+## License
+
+MIT. See [LICENSE](LICENSE) and [SECURITY.md](SECURITY.md).
+running SPARQL directly against the graph; the queries are in `eval/phoenix/scratch/`.
 
 **watsonx Orchestrate agent: 10/10.** Each question was asked in a fresh chat and checked against the gold answer and the server logs.
 
