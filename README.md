@@ -143,31 +143,5 @@ An automated harness using [Arize Phoenix](https://docs.arize.com/phoenix) with 
 MIT. See [LICENSE](LICENSE) and [SECURITY.md](SECURITY.md).
 running SPARQL directly against the graph; the queries are in `eval/phoenix/scratch/`.
 
-**watsonx Orchestrate agent: 10/10.** Each question was asked in a fresh chat and checked against the gold answer and the server logs.
-
-Three findings from that testing:
-1. **The model fabricated results despite correct queries.** For two questions, the agent wrote the right SPARQL and received the right rows, then presented invented ones. A guideline requiring it to report only rows returned by `kg_run_sparql` fixed this.
-2. **The model built a composite score the schema forbids.** A guideline and instruction to decline composite indexes and offer individual indicators fixed this.
-3. **Earlier answers leak into later ones.** In a continuing chat, the agent reused a previous result instead of applying a new filter. Evaluation questions should each run in a fresh chat.
-
-Building the gold answers also surfaced and fixed several schema errors (program flags documented on the wrong class, an undercounted elderly population, NWS coverage overstated) that would have misled any agent.
-
-An automated harness using [Arize Phoenix](https://docs.arize.com/phoenix) with LLM judges is in `eval/phoenix/`. It compares a minimal prompt with one that includes the schema up front, across multiple models. See `eval/phoenix/README.md`.
-
----
-
-## Known limitations
-
-- NWS data contains flash flood warnings (FF) only; flood warnings (FA) were lost in the graph build.
-- One FEMA declaration title has a trailing space (`"HURRICANE BERYL "`), so exact title matches fail.
-- The broadband access rate divides by households with internet access, which leaves little variation between counties.
-- Indicators for very small counties (such as Loving and Kenedy) are based on few residents and can be extreme.
-- SPARQL queries have no execution timeout.
-- The deployed endpoint has no authentication, matching the hackathon's public-data setup.
-
-## License
-
-MIT. See [LICENSE](LICENSE) and [SECURITY.md](SECURITY.md).
-
 
 [MIT](LICENSE). See [SECURITY.md](SECURITY.md) for the vulnerability disclosure policy.
