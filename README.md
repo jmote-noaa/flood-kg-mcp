@@ -140,8 +140,4 @@ An automated harness using [Arize Phoenix](https://docs.arize.com/phoenix) with 
 
 ## License
 
-MIT. See [LICENSE](LICENSE) and [SECURITY.md](SECURITY.md).
-running SPARQL directly against the graph; the queries are in `eval/phoenix/scratch/`.
-
-
 [MIT](LICENSE). See [SECURITY.md](SECURITY.md) for the vulnerability disclosure policy.
