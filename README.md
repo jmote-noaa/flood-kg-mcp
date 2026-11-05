@@ -10,7 +10,7 @@ Built for GSA's 2026 MCP Server and AI Agent Hackathon (data track, IBM watsonx 
 
 ## What it does
 
-Most MCP servers wrap a REST API with a fixed set of endpoints. This one exposes a knowledge graph instead: an agent can discover the graph's structure, read documented schema and analytical guidance, and write its own SPARQL queries across four datasets joined through shared county entities.
+Most MCP servers wrap a REST API with a fixed set of endpoints. This one exposes a knowledge graph instead: an agent can discover the graph's structure, read documented schema and analytical guidance, and write its own SPARQL queries across four publicly-available datasets joined through shared county entities.
 
 | Dataset | Content in the graph |
 |---|---|
