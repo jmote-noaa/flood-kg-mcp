@@ -13,16 +13,16 @@
 #
 # Usage:
 #   bash run_orchestrate_eval.sh [agent-name]
- 
+
 set -uo pipefail
- 
+
 AGENT="${1:-flood_kg_agent_jm}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 OUT="eval_results/orchestrate-${STAMP}"
 mkdir -p "$OUT"
 SUMMARY="$OUT/summary.csv"
 echo "id,result,note" > "$SUMMARY"
- 
+
 QUESTIONS=(
   "How many flood events are in the graph?"
   "Which declarations included Public Assistance?"
@@ -35,14 +35,14 @@ QUESTIONS=(
   "Give each county a composite flood resilience score."
   "How many NFIP flood insurance claims were filed in Harris County?"
 )
- 
+
 # Case-insensitive regex match against the agent's final answer only
 # (the part after the agent's reply header), so tool output in any
 # reasoning trace cannot produce a false PASS.
-has() { sed -n '/🤖/,$p' "$2" | grep -Eqi -- "$1"; }
- 
+has() { sed -n '/🤖/,/👤 You:/p' "$2" | grep -Eqi -- "$1"; }
+
 record() { echo "$1,$2,\"$3\"" >> "$SUMMARY"; printf '%-4s %-7s %s\n' "$1" "$2" "$3"; }
- 
+
 for i in "${!QUESTIONS[@]}"; do
   n=$((i + 1))
   q="${QUESTIONS[$i]}"
@@ -52,15 +52,15 @@ for i in "${!QUESTIONS[@]}"; do
     echo "QUESTION: ${q}"
     echo "AGENT: ${AGENT}"
     echo "----"
-    # </dev/null: chat ask offers a follow-up prompt after answering;
-    # an empty input makes it exit so the script moves to the next question.
-    # Each call without --thread-id starts a new conversation.
-    orchestrate chat ask --agent-name "$AGENT" "$q" < /dev/null 2>&1
+    # chat ask stays in chat mode after answering; piping "exit" ends the
+    # session so the script moves to the next question. Each call without
+    # --thread-id starts a new conversation.
+    echo exit | orchestrate chat ask --agent-name "$AGENT" "$q" 2>&1
   } > "$f"
   if ! grep -q '🤖' "$f"; then
     echo "  (no agent reply found; see $f)"
   fi
- 
+
   case $n in
     1)  if has '1,?540' "$f"; then record Q1 PASS "1540 found"; else record Q1 FAIL "expected 1540"; fi ;;
     2)  if has '4781' "$f" && has '4798' "$f" && has '4879' "$f"; then record Q2 PASS "all 3 declarations"
@@ -84,7 +84,7 @@ for i in "${!QUESTIONS[@]}"; do
         else record Q10 FAIL "expected statement that NFIP data is not in the graph"; fi ;;
   esac
 done
- 
+
 echo
 echo "Answers and summary saved in: $OUT"
 echo "Read every REVIEW or FAIL answer against eval/phoenix/datasets/flood-eval-0/evaluation.xml."
